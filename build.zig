@@ -10,8 +10,16 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .strip = (optimize != .Debug),
         }),
     });
+
+    exe.lto = blk: {
+        switch (optimize) {
+            .ReleaseFast => break :blk .full,
+            else => break :blk .none
+        }
+    };
 
     b.installArtifact(exe);
     

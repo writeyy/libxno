@@ -28,11 +28,8 @@ pub fn addressToPublicKey(pkey_dest: []u8, address: []const u8) void {
     assert(address.len == NANO_ADDRESS_SIZE);
     assert(pkey_dest.len == 32);
 
-    std.debug.print("{}\n", .{decodeSize(NANO_ADDRESS_SIZE)});
-
-    var temp: [decodeSize(NANO_ADDRESS_SIZE) - decodeSize(4)]u8 = undefined;
+    var temp: [decodeSize(NANO_ADDRESS_SIZE) - decodeSize(5)]u8 = undefined;
     decodeBase32(&temp, address[5..]);
-    std.debug.print("{s}\n", .{std.fmt.bytesToHex(temp, .lower)});
     @memcpy(pkey_dest, temp[0..32]);
 }
 
@@ -41,19 +38,18 @@ pub fn addressToHex(address: []const u8) []const u8 {
 
     const addr = address[5..];
 
-    var keyB: [decodeSize(52)]u8 = undefined;
-    var hashB: [decodeSize(8)]u8 = undefined;
+    var key_bytes: [decodeSize(52)]u8 = undefined;
+    var hash_bytes: [decodeSize(8)]u8 = undefined;
 
-    std.debug.print("{} {} {} {}\n", .{keyB.len, hashB.len, addr[0..52].len, addr[52..].len});
+    decodeBase32(&key_bytes, addr[0..52]);
+    decodeBase32(&hash_bytes, addr[52..60]);
 
-    decodeBase32(&keyB, addr[0..52]);
-    decodeBase32(&hashB, addr[52..60]);
+    var blake_hash: [Blake.digest_length]u8 = undefined;
+    Blake.hash(&key_bytes, &blake_hash, .{});
+    std.mem.reverse(u8, &blake_hash);
 
-    var hash: [Blake.digest_length]u8 = undefined;
-    Blake.hash(&hashB, &hash, .{});
-    std.mem.reverse(u8, &hash);
-    
-    std.debug.print("{any} {any}\n", .{hashB, hash});
+    std.debug.print("{s} {s}\n", .{std.fmt.bytesToHex(hash_bytes, .lower), std.fmt.bytesToHex(blake_hash, .lower)});
+    //assert(std.mem.eql(u8, &hash_bytes, &blake_hash));
 
     return "ok";
 }
@@ -67,7 +63,6 @@ const BASE32_LOOKUP = blk: {
 };
 
 pub fn decodeBase32(dest: []u8, input: []const u8) void {
-    std.debug.print("{}\n", .{decodeSize(input.len)});
     assert(dest.len == decodeSize(input.len));
 
     const length = input.len;
@@ -104,7 +99,7 @@ pub fn decodeBase32(dest: []u8, input: []const u8) void {
 }
 
 pub fn decodeSize(len: usize) usize {
-    return ((len * 5) / 8);
+    return (((len * 5) + 4) / 8);
 }
 
 pub fn encodeSize(len: usize) usize {

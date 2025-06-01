@@ -1,8 +1,7 @@
 .{
-    .name = .nano,
+    .name = .libxno,
     .version = "0.0.0",
-    .fingerprint = 0x95dbc4dbbff69e2f,
-    .minimum_zig_version = "0.14.0",
+    .fingerprint = 0xb768473e87b8846d,
     .dependencies = .{},
     .paths = .{
         "build.zig",
